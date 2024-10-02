@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const media_service = require('../service/media.service');
+const {User} = require('../model/index')
 const formidable = require("formidable");
+const {checkIsAuthorized} = require('../middleware/index')
+const {IMG_PATH} = require("../config/constant")
 
-router.post('/',(req,res) => {
+router.post('/',checkIsAuthorized,async (req,res) => {
     try{
         const form = new formidable.IncomingForm();
         let requestFiles,requestFields;
@@ -23,10 +26,18 @@ router.post('/',(req,res) => {
                 resolve(true);
             })
         }).then(async (paramsList) =>  {
-            console.log("Promise tehn",requestFiles)
+            // console.log("Promise tehn",requestFiles)
             const create_res = await media_service.create(requestFiles,requestFields);
+            const user = await User.findById(req.sub._id)
+            await User.findByIdAndUpdate(req.sub._id,{
+                "profile_images":user.profile_images ? [...user.profile_images, create_res._id]: [create_res._id]
+            })
+            // return 
+            const userProfile = await User.findById(req.sub._id).populate('profile_images')
+            console.log(userProfile)
             res.status(200).send({
-                result:create_res,
+                // result:user.profile_images,
+                result:userProfile.profile_images?.map((each) => `${IMG_PATH}${each.url}`),
                 error:null
             })
         }).catch((err) => {

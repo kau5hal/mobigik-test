@@ -84,5 +84,5 @@ module.exports = {
         }else{
             throw `User does not exist!`
         }
-    }
+    },
 }
